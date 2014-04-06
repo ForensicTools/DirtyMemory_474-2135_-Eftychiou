@@ -1,46 +1,43 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
-
-my $level= 1;
+	
 my $choice= 0;
 my $memory= '';
 my $tool= '';
+my $database="dirtyDatabase.txt";
 
 while(1)
 {
+	&Start;
 	
-	if($level==1){ #Start level
-		Start();
 
-		if($choice == 1){
-			ProcessMemory();
-		}
-		elsif($choice  == 2){
-			$level=2;
-			Settings();
-		}
-		
-
-	}elsif($level==2){ #Settings level
-
-		Settings();
-
-		if($choice == 1){
-			#PrintDatabase();
-		}
-		elsif($choice  == 2){
-			#UpdateDatabase();
-		}
-		elsif($choice  == 3){
-			#SearchDatabase();
-		}
-		elsif($choice  == 4){
-			$level=1;
-			Start();
-		}
-
+	if($choice == 1){
+		&ProcessMemory;
 	}
+	elsif($choice  == 2){
+	
+		while(1)
+		{
+			&Settings;
+	
+			if($choice == 1){
+			
+				&PrintDatabase;
+			}
+			elsif($choice  == 2){
+				#UpdateDatabase();
+			}
+			elsif($choice  == 3){
+				#SearchDatabase();
+			}
+			elsif($choice  == 4){
+				last;
+			}
+		}
+	}
+
+	
 }
 
 sub ExecutePS {
@@ -61,10 +58,9 @@ sub ExecutePS {
 
 
 sub Start {	
-    print "level is $level and choice is $choice\n";
 
     print "\n";
-    print "Please select your choice by number (1-3).\n";
+    print "Please select your choice by number (1-2).\n";
     print "1. Process Memory\n";
     print "2. Settings\n";
     print "\n";		
@@ -84,8 +80,6 @@ sub ProcessMemory {
 
 
 sub Settings {	
-    print "level is $level and choice is $choice\n";
-
     print "\n";
     print "Please select your choice by number (1-4).\n";	
     print "1. Print Dirty Database\n";
@@ -95,5 +89,16 @@ sub Settings {
     print "\n";		
     print "Choice>";
     chomp($choice = <STDIN>);
+
+} 
+
+sub PrintDatabase {
+	open IN, $database or die "Cannot read: $!\n";
+
+	while( my $line = <IN> ) 
+	{
+   		print "hello $line\n";
+	}
+
 } 
 
