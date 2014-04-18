@@ -5,7 +5,24 @@ use warnings;
 my $choice= 0;
 my $memory= '';
 my $tool= '';
+my %dirty_key =();
 my $database="dirtyDatabase.txt";
+
+    print "Loading Database\n";
+    open IN, $database or die "Cannot read: $!\n";
+
+    while( my $line = <IN> )  {
+	
+	my @dirtykeys = split(/\s+/, $line);
+
+	foreach my $key (@dirtykeys){
+	
+		$dirty_key{$key} =1; 
+	}
+
+    }
+    close(IN);
+
 
 while(1)
 {
@@ -26,10 +43,10 @@ while(1)
 				&PrintDatabase;
 			}
 			elsif($choice  == 2){
-				#UpdateDatabase();
+				&UpdateDatabase();
 			}
 			elsif($choice  == 3){
-				#SearchDatabase();
+				&SearchDatabase();
 			}
 			elsif($choice  == 4){
 				last;
@@ -97,8 +114,52 @@ sub PrintDatabase {
 
 	while( my $line = <IN> ) 
 	{
-   		print "hello $line\n";
+   		print "$line\n";
 	}
 
 } 
+
+sub UpdateDatabase {
+	my $update;
+	my $key;
+
+	print "1. Add key.\n";
+	print "2. Remove key.\n";
+   	print "\n";		
+   	print "Choice>";
+    	chomp($update = <STDIN>);
+
+	if($update==1){
+		print "Enter a key to add>";
+		chomp($key = <STDIN>);
+		if( exists($dirty_key{$key} ) ){
+			print "\"$key\" already exists in database\n";
+		}else{
+			$dirty_key{$key} =1; 
+			print "\"$key\" added to database\n";
+		}
+	}elsif($update==2){
+		print "Enter a key to remove>";
+		chomp($key = <STDIN>);
+		if( exists($dirty_key{$key} ) ){
+		        delete $dirty_key{$key};
+			print "\"$key\" removed from database\n";
+		}else{
+			print "\"$key\" does not exist in database\n";
+		}
+	}
+}
+
+sub SearchDatabase {
+	my $search;
+
+	print "Enter a key word >";
+    	chomp($search = <STDIN>);
+
+	if( exists($dirty_key{$search} ) ){
+		print "\"$search\" exists in database\n";
+	}else{
+		print "\"$search\" does not exist in database\n";
+	}
+}
 
