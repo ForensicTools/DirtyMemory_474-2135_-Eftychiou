@@ -1,25 +1,31 @@
 #!/usr/bin/perl
 use strict;
 use warnings;
+use Term::ANSIColor;
+use Smart::Comments;
 	
 my $choice= 0;
 my $memory= '';
 my $tool= '';
 my %dirty_key =();
+my %findings =();
+my $color='red';
 my $database="dirtyDatabase.txt";
 
-    print "Loading Database\n";
+    print "Loading Database..\n";
     open IN, $database or die "Cannot read: $!\n";
 
     while( my $line = <IN> )  {
-	
-	my @dirtykeys = split(/\s+/, $line);
+	chomp $line;
+	my @dirtykeys = split('::', $line);
 
 	foreach my $key (@dirtykeys){
-	
-		$dirty_key{$key} =1; 
+		if(length($key)!=0)
+		{
+			$dirty_key{$key} =1; 	
+		}	
 	}
-
+	chomp $line;
     }
     close(IN);
 
@@ -49,6 +55,9 @@ while(1)
 				&SearchDatabase();
 			}
 			elsif($choice  == 4){
+				&ColorPicker	();
+			}
+			elsif($choice  == 5){
 				last;
 			}
 		}
@@ -58,17 +67,32 @@ while(1)
 }
 
 sub ExecutePS {
+   my $memory=shift;
 
-    my @split_line=();
-
-     print "Please be patient, this may take a few minutes. \n";
-    open(PS, "strings $memory | grep 'bank' |") or die("Sorry! We were not able to analyse $memory \n");
-
-    foreach my $line (<PS>) {
-
-	print "$line\n";
-    }
+    print "Please be patient, this may take a few minutes. \n";
+    
+    for my $key ( keys %dirty_key ) {  ### Evaluating [===|    ] % done
+        open(PS, "strings $memory | grep $key |") or break("Cannot find $memory \n");
+	foreach my $line (<PS>) {
+		
+		if(! exists($findings{$line} ) ){
+			my @values = split('(\s+)',$line);
+			foreach my $value (@values){
+				if($value=~ /$key/)
+				{
+					    print color $color;
+    					    print "$value";
+   					    print color 'reset';
+				}else{
+					print "$value";
+				}
+			}
+			$findings{$line} =1; 
+		}
+    	}
+    }  
     close(PS);
+
     print "Memory analysis completed succesfully.\n";
 
 }
@@ -88,21 +112,23 @@ sub Start {
 
 
 sub ProcessMemory {
-
-   print "Enter a memory image you wish to analyse: ";
-   chomp($memory = <STDIN>);	
 	
-   ExecutePS();
+	print "Enter a memory image you wish to analyse: ";
+	chomp($memory = <STDIN>);	
+
+	ExecutePS($memory);
+     
 } 
 
 
 sub Settings {	
     print "\n";
     print "Please select your choice by number (1-4).\n";	
-    print "1. Print Dirty Database\n";
-    print "2. Update Dirty Database\n";
-    print "3. Search Dirty Database\n";
-    print "4. Back to Start\n";
+    print "1. Print Database\n";
+    print "2. Update Database\n";
+    print "3. Search Database\n";
+    print "4. Chose text color\n";
+    print "5. Back to Start\n";
     print "\n";		
     print "Choice>";
     chomp($choice = <STDIN>);
@@ -110,13 +136,9 @@ sub Settings {
 } 
 
 sub PrintDatabase {
-	open IN, $database or die "Cannot read: $!\n";
-
-	while( my $line = <IN> ) 
-	{
-   		print "$line\n";
-	}
-
+    for my $key ( keys %dirty_key ) {
+        print "$key\n";
+    }
 } 
 
 sub UpdateDatabase {
@@ -125,29 +147,46 @@ sub UpdateDatabase {
 
 	print "1. Add key.\n";
 	print "2. Remove key.\n";
+	print "3. Back to Settings.\n";
    	print "\n";		
    	print "Choice>";
-    	chomp($update = <STDIN>);
+    	chomp ($update = <STDIN>);
 
 	if($update==1){
-		print "Enter a key to add>";
-		chomp($key = <STDIN>);
+		do{
+			print "Enter a key to add>";
+			chomp($key = <STDIN>); 
+ 		}until(length($key)!=0);
+		
 		if( exists($dirty_key{$key} ) ){
 			print "\"$key\" already exists in database\n";
 		}else{
 			$dirty_key{$key} =1; 
 			print "\"$key\" added to database\n";
 		}
+			
+		
 	}elsif($update==2){
-		print "Enter a key to remove>";
-		chomp($key = <STDIN>);
+	 	do {
+			print "Enter a key to remove>";
+			chomp($key = <STDIN>); 
+ 		}until(length($key)!=0);
+
 		if( exists($dirty_key{$key} ) ){
 		        delete $dirty_key{$key};
 			print "\"$key\" removed from database\n";
 		}else{
 			print "\"$key\" does not exist in database\n";
 		}
+	}elsif($update==3){
+		return;
 	}
+
+	open(DATA,">$database") || die("Can't update file");
+ 	for my $newKey ( keys %dirty_key ) {
+        	print DATA "::$newKey";
+  	}				
+	close (DATA);
 }
 
 sub SearchDatabase {
@@ -161,5 +200,22 @@ sub SearchDatabase {
 	}else{
 		print "\"$search\" does not exist in database\n";
 	}
+}
+
+sub ColorPicker {
+	use Term::ANSIColor 2.02 qw(colorvalid);
+	my $valid;
+	while(!$valid)
+	{
+		print "Enter a color that will highlight your findings: ";
+		chomp($color = <STDIN>);
+       		$valid = colorvalid($color);
+        	print $valid ? "\n" : "The color string is invalid. Please chose another color.\n";
+	}	
+	print color $color;
+        print "Your findings will be printed in $color.\n";
+	print color 'reset';
+	return;
+     
 }
 
